@@ -175,6 +175,7 @@ MapInfo trace(inout Ray ray) {
     return MapInfo(Material(FOG_COLOR, 0.0, 0.0, 0.0), 1.0);
 }
 
+#ifdef SHADOWS
 float softshadow(inout Ray ray) {
     // While we're not past the target, do the stuff
     // Subtract EPSILON * 2 so we don't get close enough to the original object to trigger the shadow
@@ -196,6 +197,7 @@ float softshadow(inout Ray ray) {
     // If we don't hit anything, the point is not in shadow so the shadow multiplier is 1.0
     return penumbra;
 }
+#endif
 
 //// Main function
 

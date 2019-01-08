@@ -11,7 +11,7 @@ packer: Makefile
 	cd vondehi; nasm -fbin -o vondehi vondehi.asm
 
 shader.min.frag: shader.frag replacements.pl Makefile
-	glslangValidator -E shader.frag | perl -p replacements.pl > shader.min.frag
+	glslangValidator -E shader.frag | perl replacements.pl > shader.min.frag
 	wc -c shader.min.frag
 
 shader.min.frag.h: shader.min.frag Makefile
