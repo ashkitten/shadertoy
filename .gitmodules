@@ -1,0 +1,9 @@
+[submodule "Section-Header-Stripper"]
+	path = Section-Header-Stripper
+	url = https://github.com/blackle/Section-Header-Stripper.git
+[submodule "vondehi"]
+	path = vondehi
+	url = https://gitlab.com/PoroCYon/vondehi.git
+[submodule "smol-v"]
+	path = smol-v
+	url = https://github.com/aras-p/smol-v.git
