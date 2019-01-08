@@ -7,7 +7,7 @@ out vec4 color;
 uniform float time;
 
 //// Constant resolution
-const vec2 resolution = vec2(1920, 1080);
+vec2 resolution = vec2(1920, 1080);
 
 //// Definitions
 
@@ -29,13 +29,13 @@ const vec2 resolution = vec2(1920, 1080);
 
 #define FOG
 #define FOG_DISTANCE 25.0
-#define FOG_COLOR vec3(0.2, 0.25, 0.3)
+#define FOG_COLOR vec3(0.2, 0.3, 0.3)
 
 #define MATERIAL_LIGHTGRAY Material(vec3(0.9, 0.9, 0.9), 0.5, 8.0, 0.4)
-#define MATERIAL_GREEN Material(vec3(0.258824, 0.956863, 0.607843), 0.8, 8.0, 0.7)
-#define MATERIAL_BLUE Material(vec3(0.258824, 0.52549, 0.956863), 0.8, 4.0, 0.4)
-#define MATERIAL_PURPLE Material(vec3(0.878431, 0.4, 1.0), 1.0, 8.0, 0.0)
-#define MATERIAL_YELLOW Material(vec3(1.0, 0.843137, 0.0), 1.0, 8.0, 0.2)
+#define MATERIAL_GREEN Material(vec3(0.3, 1.0, 0.6), 0.8, 8.0, 0.7)
+#define MATERIAL_BLUE Material(vec3(0.3, 0.5, 1.0), 0.8, 4.0, 0.4)
+#define MATERIAL_PURPLE Material(vec3(0.9, 0.4, 1.0), 1.0, 8.0, 0.0)
+#define MATERIAL_YELLOW Material(vec3(1.0, 0.8, 0.0), 1.0, 8.0, 0.2)
 
 //// Structs
 
@@ -57,12 +57,8 @@ struct Ray {
     vec3 origin;
     // Ray's direction
     vec3 direction;
-
     // Where the ray is aiming at
     vec3 target;
-
-    // Current position along the ray
-    float length;
     // Just so we don't have to calculate it multiple times ¯\_(ツ)_/¯
     vec3 position;
 };
@@ -179,7 +175,7 @@ MapInfo trace(inout Ray ray) {
     return MapInfo(Material(FOG_COLOR, 0.0, 0.0, 0.0), 1.0);
 }
 
-float softshadow(inout Ray ray, float softness) {
+float softshadow(inout Ray ray) {
     // While we're not past the target, do the stuff
     // Subtract EPSILON * 2 so we don't get close enough to the original object to trigger the shadow
     float penumbra = 1.0;
@@ -190,7 +186,7 @@ float softshadow(inout Ray ray, float softness) {
         if (mapInfo.hit < EPSILON) return 0.0;
 
         #ifdef SOFT_SHADOWS
-            penumbra = min(penumbra, softness * mapInfo.hit / distance(ray.position, ray.target));
+            penumbra = min(penumbra, SHADOW_HARDNESS * mapInfo.hit / distance(ray.position, ray.target));
         #endif
 
         if (mapInfo.hit > SHADOW_THRESHOLD) ray.position += ray.direction * mapInfo.hit;
@@ -252,7 +248,7 @@ void main() {
 
             #ifdef SHADOWS
                 // Trace shadows
-                float shadow = softshadow(lightRay, SHADOW_HARDNESS);
+                float shadow = softshadow(lightRay);
             #else
                 float shadow = 1.0;
             #endif

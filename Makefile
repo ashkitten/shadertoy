@@ -1,6 +1,6 @@
 PROJECT = shadertoy
 LDLIBS = -lX11 -lXrandr -lGL -lGLEW -lc -lstdc++
-CXXFLAGS = -masm=intel -O0 -std=c++17 -no-pie -fno-plt -fno-stack-protector -nodefaultlibs $(if $(DEBUG),-DDEBUG -g)
+CXXFLAGS = -masm=intel -O1 -std=c++17 -no-pie -fno-plt -fno-stack-protector -nodefaultlibs $(if $(DEBUG),-DDEBUG -g)
 # smol-v needs .got.plt and default libs
 
 all: $(PROJECT)
@@ -10,8 +10,9 @@ all: $(PROJECT)
 packer: Makefile
 	cd vondehi; nasm -fbin -o vondehi vondehi.asm
 
-shader.min.frag: shader.frag Makefile
-	glslangValidator -E shader.frag | perl -pe 's/^\s+//; s/\n//g if !/^#/; s/(?<=\W)\s+(?=.)|(?<=.)\s+(?=\W)//g' > shader.min.frag
+shader.min.frag: shader.frag replacements.pl Makefile
+	glslangValidator -E shader.frag | perl -p replacements.pl > shader.min.frag
+	wc -c shader.min.frag
 
 shader.min.frag.h: shader.min.frag Makefile
 	printf '#pragma once\nconst char *shader_min_frag = R"--(' > shader.min.frag.h
