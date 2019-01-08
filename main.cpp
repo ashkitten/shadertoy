@@ -1,9 +1,9 @@
+// glxew must be first
 #include <GL/glxew.h>
+#include <GL/glut.h>
 #include <GL/glx.h>
-#include <X11/Xatom.h>
-#include <X11/extensions/Xrandr.h>
-#include <sys/time.h>
 #include <sys/syscall.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 #ifdef DEBUG
@@ -19,51 +19,13 @@
  * Variables
  */
 
-// Relating to the X protocol and GLX context
-Display *display;
-Window root;
-GLint attributes[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
-XVisualInfo *visualInfo;
-Colormap colormap;
-XSetWindowAttributes xSetWindowAttributes;
-Window window;
-
 timeval start;
+timeval now;
+GLuint uniformTime;
 
-GLuint VBO, VAO, EBO;
-GLuint shader;
-
-const int windowWidth = 1920;
-const int windowHeight = 1080;
-
-void initWindow() {
-    display = XOpenDisplay(NULL);
-
-    root = DefaultRootWindow(display);
-
-    // set video mode to 1920x1080 (thanks blackle)
-    int num_sizes;
-    XRRScreenSize* sizes = XRRSizes(display, 0, &num_sizes);
-    for (int i = 0; i < num_sizes; i++) {
-        if (sizes[i].width == windowWidth && sizes[i].height == windowHeight) {
-            XRRScreenConfiguration* conf = XRRGetScreenInfo(display, root);
-            XRRSetScreenConfig(display, conf, root, i, RR_Rotate_0, CurrentTime);
-            break;
-        }
-    }
-
-    visualInfo = glXChooseVisual(display, 0, attributes);
-    colormap = XCreateColormap(display, root, visualInfo->visual, AllocNone);
-    xSetWindowAttributes.colormap = colormap;
-
-    window = XCreateWindow(display, root, 0, 0, windowWidth, windowHeight, 0, visualInfo->depth, InputOutput, visualInfo->visual, CWColormap, &xSetWindowAttributes);
-
-    Atom wmState = XInternAtom(display, "_NET_WM_STATE", true);
-    Atom wmFullscreen = XInternAtom(display, "_NET_WM_STATE_FULLSCREEN", true);
-    XChangeProperty (display, window, wmState, XA_ATOM, 32, PropModeReplace, (unsigned char *) &wmFullscreen, 1);
-
-    XMapWindow(display, window);
-}
+/*
+ * Debugging
+ */
 
 #ifdef DEBUG
 void GLAPIENTRY debugCallback(GLenum source, GLenum type, GLuint id, GLenum severity,
@@ -73,16 +35,7 @@ void GLAPIENTRY debugCallback(GLenum source, GLenum type, GLuint id, GLenum seve
 #endif
 
 void initGL() {
-    GLXContext glXContext = glXCreateContext(display, visualInfo, NULL, GL_TRUE);
-    glXMakeCurrent(display, window, glXContext);
-
-    // Needed for blending the text and main shader quads
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    // Set this to true so GLEW knows to use a modern approach to retrieving function pointers and extensions
-    glewExperimental = GL_TRUE;
-    // Initialize GLEW to setup the OpenGL Function pointers
+    // Initialize GLEW to setup the OpenGL function pointers
     glewInit();
 
     #ifdef DEBUG
@@ -117,7 +70,7 @@ void initGL() {
     }
     #endif
 
-    shader = glCreateProgram();
+    GLuint shader = glCreateProgram();
     glAttachShader(shader, frag);
     glLinkProgram(shader);
 
@@ -137,31 +90,33 @@ void initGL() {
     #endif
 
     glUseProgram(shader);
-    glDeleteShader(frag);
+
+    uniformTime = glGetUniformLocation(shader, "time");
 }
 
 void render() {
     // Set time uniform
-    timeval now;
     syscall(SYS_gettimeofday, &now, NULL);
-    glUniform1f(glGetUniformLocation(shader, "time"), (float) (now.tv_sec - start.tv_sec) + (float) (now.tv_usec - start.tv_usec) / 1000000);
+    glUniform1f(uniformTime, (float) (now.tv_sec - start.tv_sec) + (float) (now.tv_usec - start.tv_usec) / 1000000);
 
     glRecti(-1, -1, 1, 1);
 
-    // Swap the screen buffers
-    glXSwapBuffers(display, window);
+    glFlush();
 }
 
-int main() {
-    initWindow();
+int main(int argc, char **argv) {
+    glutInit(&argc, argv);
+    glutCreateWindow("");
+    glutFullScreen();
+
+    glutDisplayFunc(render);
+    glutIdleFunc(render);
+
     initGL();
 
     syscall(SYS_gettimeofday, &start, NULL);
 
-    // Main render loop
-    while(true) {
-        render();
-    }
+    glutMainLoop();
 
     return 0;
 }

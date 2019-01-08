@@ -85,15 +85,13 @@ foreach my $key (keys %replacements) {
 }
 
 foreach my $ident (@idents) {
-    my $str = quotemeta($ident);
-    if (!grep /\b$str\b/, @file) {
+    if (!grep /\b$ident\b/, @file) {
         print STDERR "WARNING: ident '$ident' not found\n";
     }
 }
 
 foreach my $define (@defines) {
-    my $str = quotemeta($define);
-    if (!grep /\b$str\b/, @file) {
+    if (!grep /\b$define\b/, @file) {
         print STDERR "WARNING: define '$define' not found\n";
     }
 }
@@ -108,11 +106,6 @@ foreach (@file) {
         s/$str/$replacements{$key}/g
     }
 
-    foreach my $i (0..$#all) {
-        my $str = quotemeta($all[$i]);
-        s/\b$str\b/$dict[$i]/g;
-    }
-
     # remove leading whitespace
     s/^\s+//;
     # remove newlines except following preprocessor directives
@@ -124,6 +117,10 @@ foreach (@file) {
 
     # rename iterator variable to not conflict with others
     s/\bi\b/_/g;
+
+    foreach my $i (0..$#all) {
+        s/\b$all[$i]\b/$dict[$i]/g;
+    }
 
     print;
 }

@@ -1,17 +1,21 @@
 PROJECT = shadertoy
-LDLIBS = -lX11 -lXrandr -lGL -lGLEW -lc -lstdc++
+LDLIBS = -lGL -lGLEW -lglut -lc $(if $(DEBUG),-lstdc++)
 CXXFLAGS = -masm=intel -O1 -std=c++17 -no-pie -fno-plt -fno-stack-protector -nodefaultlibs $(if $(DEBUG),-DDEBUG -g)
 # smol-v needs .got.plt and default libs
 
 all: $(PROJECT)
 
-.PHONY: packer
+.PHONY: run
+run: all
+	./$(PROJECT)
 
+.PHONY: packer
 packer: Makefile
 	cd vondehi; nasm -fbin -o vondehi vondehi.asm
 
 shader.min.frag: shader.frag replacements.pl Makefile
 	glslangValidator -E shader.frag | perl replacements.pl > shader.min.frag
+	glslangValidator shader.min.frag
 	wc -c shader.min.frag
 
 shader.min.frag.h: shader.min.frag Makefile
@@ -53,7 +57,7 @@ main.gz: main Makefile
 
 main.xz: main Makefile
 	-rm main.xz
-	lzma --format=lzma -9 --extreme --lzma1=preset=9,lc=0,lp=0,pb=0,nice=64,depth=16,dict=16384 --keep --stdout main > main.xz
+	lzma --format=lzma -9 --extreme --lzma1=preset=9,lc=0,lp=0,pb=0,nice=64,depth=4,dict=4096 --keep --stdout main > main.xz
 	wc -c main.xz
 
 $(PROJECT): main.xz packer Makefile
