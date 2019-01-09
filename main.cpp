@@ -1,9 +1,7 @@
-// glxew must be first
+// glew must be first
 #include <GL/glew.h>
 #include <GL/glut.h>
-#include <sys/syscall.h>
 #include <sys/time.h>
-#include <unistd.h>
 
 #ifdef DEBUG
 #include <iostream>
@@ -95,7 +93,7 @@ void initGL() {
 
 void render() {
     // Set time uniform
-    syscall(SYS_gettimeofday, &now, NULL);
+    gettimeofday(&now, NULL);
     glUniform1f(uniformTime, (float) (now.tv_sec - start.tv_sec) + (float) (now.tv_usec - start.tv_usec) / 1000000);
 
     glRecti(-1, -1, 1, 1);
@@ -113,7 +111,7 @@ int main(int argc, char **argv) {
 
     initGL();
 
-    syscall(SYS_gettimeofday, &start, NULL);
+    gettimeofday(&start, NULL);
 
     glutMainLoop();
 
