@@ -1,7 +1,6 @@
 // glxew must be first
-#include <GL/glxew.h>
+#include <GL/glew.h>
 #include <GL/glut.h>
-#include <GL/glx.h>
 #include <sys/syscall.h>
 #include <sys/time.h>
 #include <unistd.h>
