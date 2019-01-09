@@ -7,12 +7,14 @@ my @file = <>;
 close STDIN;
 
 my %replacements = (
-    "0.0001 * 2.0"        => "0.0002",
-    "5 + 1"               => "6",
-    "* 0.01"              => "/ 10",
-    "vec3(1.0)"           => "vec3(1)",
-    "vec3(0.0, 0.0, 0.0)" => "vec3(0)",
-    "25.0"                => "25",
+    "5+1"            => "6",
+    "*.01"           => "/10",
+    "*.5"            => "/2",
+    "vec3(1.)"       => "vec3(1)",
+    "vec3(.0,.0,.0)" => "vec3(0)",
+    "25."            => "25",
+    "int _"          => "_",
+    "resolution.xy"  => "resolution",
 );
 
 my @idents = (
@@ -58,7 +60,6 @@ my @idents = (
     "size",
     "softshadow",
     "specular",
-    "specular",
     "sphere",
     "target",
     "trace",
@@ -71,56 +72,44 @@ my @defines = (
     "normalize",
     "return",
     "vec3",
+    ".0001",
 );
 
 my @all = (@idents, @defines);
 
 my @dict = ('a'..'z', 'A'..'Z', 'aa'..'zz');
 
-foreach my $key (keys %replacements) {
-    my $str = quotemeta($key);
-    if (!grep /$str/, @file) {
-        print STDERR "WARNING: replacement '$key' not found\n";
-    }
-}
-
-foreach my $ident (@idents) {
-    if (!grep /\b$ident\b/, @file) {
-        print STDERR "WARNING: ident '$ident' not found\n";
-    }
-}
-
-foreach my $define (@defines) {
-    if (!grep /\b$define\b/, @file) {
-        print STDERR "WARNING: define '$define' not found\n";
-    }
-}
-
 foreach my $i (0..$#defines) {
     print "#define $dict[$i + $#idents + 1] $defines[$i]\n";
 }
 
-foreach (@file) {
-    foreach my $key (keys %replacements) {
-        my $str = quotemeta($key);
-        s/$str/$replacements{$key}/g
+# rename iterator variable to not conflict with others
+grep s/\bi\b/_/g, @file;
+
+# define iterator variable as global
+print "int _;";
+
+# remove leading whitespace
+grep s/^\s+//, @file;
+# remove newlines except following preprocessor directives
+grep s/\n//, grep !/^#/, @file;
+# remove whitespace between non-word characters and anything
+grep s/(?<=\W)\s+(?=.)|(?<=.)\s+(?=\W)//g, @file;
+# remove leading and trailing 0's
+grep s/\b((?<=[^0]\.)0|0(?=\.\d+))\b//g, @file;
+
+foreach my $key (keys %replacements) {
+    if (!grep /\Q$key\E/, @file) {
+        print STDERR "WARNING: '$key' not found\n";
     }
-
-    # remove leading whitespace
-    s/^\s+//;
-    # remove newlines except following preprocessor directives
-    s/\n//g if !/^#/;
-    # remove whitespace between non-word characters and anything
-    s/(?<=\W)\s+(?=.)|(?<=.)\s+(?=\W)//g;
-    # remove leading and trailing 0's
-    s/\b((?<=[^0]\.)0|0(?=\.\d+))\b//g;
-
-    # rename iterator variable to not conflict with others
-    s/\bi\b/_/g;
-
-    foreach my $i (0..$#all) {
-        s/\b$all[$i]\b/$dict[$i]/g;
-    }
-
-    print;
+    grep s/\Q$key\E/$replacements{$key}/g, @file;
 }
+
+foreach my $i (0..$#all) {
+    if (!grep /(?<=\W)\Q$all[$i]\E(?=\W)/, @file) {
+        print STDERR "WARNING: '$all[$i]' not found\n";
+    }
+    grep s/((?<=\W)|\b)\Q$all[$i]\E((?=\W)|\b)/$dict[$i]/g, @file;
+}
+
+print @file;
